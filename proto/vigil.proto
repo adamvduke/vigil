@@ -1,0 +1,22 @@
+syntax = "proto3";
+package proto;
+option go_package = "vigilpb/";
+
+service Watcher {
+  rpc AddWatch (AddWatchRequest) returns (AddWatchReply) {}
+  rpc WatchedPaths (WatchedPathsRequest) returns (WatchedPathsReply) {}
+}
+
+message AddWatchRequest {
+  optional string path = 1;
+}
+
+message AddWatchReply {
+  optional string message = 1;
+  repeated string watched_paths = 2;
+}
+
+message WatchedPathsRequest{}
+message WatchedPathsReply {
+  repeated string paths = 1;
+}
