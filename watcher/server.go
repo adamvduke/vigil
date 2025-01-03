@@ -8,9 +8,9 @@ import (
 	"syscall"
 	"time"
 
-	pb "github.com/adamvduke/vigil/proto/vigilpb"
-
 	"github.com/vrecan/death/v3"
+
+	pb "github.com/adamvduke/vigil/proto/vigilpb"
 
 	"google.golang.org/grpc"
 )

@@ -160,7 +160,8 @@ linters-settings:
       - standard # Standard section: captures all standard packages.
       - default # Default section: contains all imports that could not be matched to another section type.
       - prefix(github.com/adamvduke/vigil)
-      - prefix(google.golang.org/grpc)
+      - prefix(github.com)
+      - prefix(google.golang.org)
 
   gocritic:
     # Enable all checks.
