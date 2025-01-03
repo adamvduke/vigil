@@ -107,6 +107,7 @@ linters-settings:
           - github.com/adamvduke/vigil/proto/vigilpb
           - github.com/adamvduke/vigil/client
           - github.com/adamvduke/vigil/watcher
+          - github.com/vrecan/death/v3
           
 
   errcheck:
@@ -173,8 +174,8 @@ linters-settings:
 
     # Which checks should be disabled; can't be combined with 'enabled-checks'.
     # Default: []
-    disabled-checks:
-      - exitAfterDefer
+    # disabled-checks:
+    #   - exitAfterDefer
 
   gosec:
     # To specify a set of rules to explicitly exclude.

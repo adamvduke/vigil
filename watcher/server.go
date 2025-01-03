@@ -5,11 +5,12 @@ import (
 	"log"
 	"net"
 	"os"
-	"os/signal"
 	"syscall"
 	"time"
 
 	pb "github.com/adamvduke/vigil/proto/vigilpb"
+
+	"github.com/vrecan/death/v3"
 
 	"google.golang.org/grpc"
 )
@@ -55,36 +56,33 @@ func Start(listenPath string, cwd bool, pollDuration time.Duration, args []strin
 }
 
 func serve(listenPath string, watcher *watcher) {
-	// Cleanup the unix socket on exit.
-	exitChan := makeExitChan(listenPath)
-	defer close(exitChan)
-
 	listener, err := net.Listen("unix", listenPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer listener.Close()
 
 	s := grpc.NewServer()
 	pb.RegisterWatcherServer(s, &server{watcher: watcher})
+	cleanup := prepareShutdown(s, listenPath)
 	log.Printf("Listening at: %s, process id: %d\n", listener.Addr(), os.Getpid())
 	if err := s.Serve(listener); err != nil {
+		cleanup.FallOnSword()
 		log.Fatalf("failed to serve: %v", err)
 	}
 }
 
-func makeExitChan(listenPath string) chan os.Signal {
-	exitChan := make(chan os.Signal, 1)
-	signal.Notify(exitChan, os.Interrupt, syscall.SIGTERM)
-	go func(sc chan os.Signal) {
-		s := <-sc
-		log.Printf("received: %v, removing %s and exiting\n", s, listenPath)
-		err := os.Remove(listenPath)
-		if err != nil {
+func prepareShutdown(rpcServer *grpc.Server, listenPath string) *death.Death {
+	cleanup := death.NewDeath(syscall.SIGINT, syscall.SIGTERM)
+	go cleanup.WaitForDeathWithFunc(func() {
+		log.Println("stopping grpc server...")
+		rpcServer.GracefulStop()
+
+		// Cleanup the unix socket on exit.
+		log.Printf("removing %s...", listenPath)
+		if err := os.Remove(listenPath); err != nil {
 			log.Fatal(err)
 		}
-		os.Exit(0)
-	}(exitChan)
+	})
 
-	return exitChan
+	return cleanup
 }
