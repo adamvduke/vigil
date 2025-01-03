@@ -148,11 +148,6 @@ linters-settings:
       # Exclude todo and fixme comments.
       - "^fixme:"
       - "^todo:"
-      - "601"
-      - "Config-Item:"
-      - "Message:"
-      - "Last-Modified:"
-      - "URI:"
     # Check that each sentence ends with a period.
     # Default: true
     period: true
