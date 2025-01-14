@@ -30,7 +30,7 @@ than trivial project using that tech.
 1. Install `protoc-gen-go`
 1. Install `protoc-gen-go-grpc`
 1. From the root of the vigil project directory
-    `protoc --go_out=proto/ --go-grpc_out=proto/ --proto_path=proto/ proto/vigil.proto`
+    `$ go generate`
 
 ## How it works
 By default the main entry point to the program starts a server and a watcher

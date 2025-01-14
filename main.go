@@ -10,6 +10,8 @@ import (
 	"github.com/adamvduke/vigil/watcher"
 )
 
+//go:generate protoc --go_out=proto/ --go-grpc_out=proto/ --proto_path=proto/ proto/vigil.proto
+
 const (
 	defaultPollInterval = 2
 )
