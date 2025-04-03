@@ -15,6 +15,7 @@ type changeHandler interface {
 type watcher struct {
 	changeHandler changeHandler
 	watched       map[string]time.Time
+	ticker        *time.Ticker
 }
 
 func newWatcher(c changeHandler) *watcher {
@@ -26,7 +27,8 @@ func newWatcher(c changeHandler) *watcher {
 
 func (watcher *watcher) startPolling(pollDuration time.Duration) error {
 	go watcher.changeHandler.handleFileChange("")
-	for {
+	watcher.ticker = time.NewTicker(pollDuration)
+	for range watcher.ticker.C {
 		for _, path := range watcher.watchedPaths() {
 			info, err := os.Stat(path)
 			if err != nil {
@@ -34,8 +36,8 @@ func (watcher *watcher) startPolling(pollDuration time.Duration) error {
 			}
 			watcher.checkModified(info, path)
 		}
-		time.Sleep(pollDuration)
 	}
+	return nil
 }
 
 func (watcher *watcher) checkModified(info os.FileInfo, path string) {
