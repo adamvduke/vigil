@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"time"
 
@@ -13,18 +12,20 @@ import (
 //go:generate protoc --go_out=proto/ --go-grpc_out=proto/ --proto_path=proto/ proto/vigil.proto
 
 const (
-	defaultPollInterval = 2
+	defaultPollInterval = 5 * time.Second
 )
 
 func main() {
 	// flags only used when run as a server
 	listenPath := flag.String("listen_path", "/tmp/vigil.sock", "path to the unix socket where vigil will listen for commands")
-	pollInterval := flag.Int("poll_interval", defaultPollInterval, "seconds between polling the file system for changes")
+	pollDuration := flag.Duration("poll_interval", defaultPollInterval,
+		"time interval between polling operations, accepts a value parseable by time.ParseDuration, e.g. 5s, 300ms, etc... "+
+			"https://pkg.go.dev/time#ParseDuration")
 	cwd := flag.Bool("cwd", true, "if vigil should watch the current working directory")
 
 	// flags only used when run as a client
 	runAsClient := flag.Bool("client", false, "if vigil should operate as a client rather than server/watcher")
-	path := flag.String("path", "", "a path for vigil to watch, only used when operating as a client")
+	path := flag.String("path", "", "a path to add to the list of currently watched files, only used when operating as a client")
 
 	flag.Parse()
 
@@ -48,9 +49,5 @@ func main() {
 	if len(flag.Args()) == 0 {
 		log.Fatal("must provide a program to run")
 	}
-	pollDuration, err := time.ParseDuration(fmt.Sprintf("%ds", *pollInterval))
-	if err != nil {
-		log.Fatal(err)
-	}
-	watcher.Start(*listenPath, *cwd, pollDuration, flag.Args())
+	watcher.Start(*listenPath, *cwd, *pollDuration, flag.Args())
 }
