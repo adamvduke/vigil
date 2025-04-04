@@ -15,13 +15,23 @@ import (
 	"google.golang.org/grpc"
 )
 
+type watcher interface {
+	// watcher lifecycle
+	start() error
+	stop() error
+
+	// server interactions
+	addPath(string) ([]string, error)
+	watchedPaths() []string
+}
+
 type server struct {
 	pb.UnimplementedWatcherServer
-	watcher *watcher
+	watcher watcher
 }
 
 func (s *server) AddWatch(_ context.Context, in *pb.AddWatchRequest) (*pb.AddWatchReply, error) {
-	paths, err := s.watcher.watch(in.GetPath())
+	paths, err := s.watcher.addPath(in.GetPath())
 	if err != nil {
 		return nil, err
 	}
@@ -34,28 +44,30 @@ func (s *server) WatchedPaths(_ context.Context, in *pb.WatchedPathsRequest) (*p
 	return &pb.WatchedPathsReply{Paths: paths}, nil
 }
 
-func Start(listenPath string, cwd bool, pollDuration time.Duration, args []string) {
-	runner := newProcessRunner(args)
-	watcher := newWatcher(runner)
+func Start(listenPath string, cwd, poll bool, pollDuration time.Duration, cmdArgs []string) {
+	ch := newProcessRunner(cmdArgs)
+	var watcher watcher
+	if poll {
+		watcher = newPollingWatcher(pollDuration, ch)
+	} else {
+		watcher = newNotifyWatcher(ch)
+	}
+	watcher.start()
+	defer watcher.stop()
 	if cwd {
 		dir, err := os.Getwd()
 		if err != nil {
 			log.Fatal(err)
 		}
-		if _, err := watcher.watch(dir); err != nil {
+		if _, err := watcher.addPath(dir); err != nil {
 			log.Fatal(err)
 		}
 	}
-	go func(d time.Duration) {
-		if err := watcher.startPolling(d); err != nil {
-			log.Fatal(err)
-		}
-	}(pollDuration)
 
 	serve(listenPath, watcher)
 }
 
-func serve(listenPath string, watcher *watcher) {
+func serve(listenPath string, watcher watcher) {
 	listener, err := net.Listen("unix", listenPath)
 	if err != nil {
 		log.Fatal(err)

@@ -3,6 +3,7 @@ module github.com/adamvduke/vigil
 go 1.23.4
 
 require (
+	github.com/fsnotify/fsnotify v1.8.0
 	github.com/vrecan/death/v3 v3.0.3
 	google.golang.org/grpc v1.68.1
 	google.golang.org/protobuf v1.35.2

@@ -8,6 +8,10 @@ import (
 	"strings"
 )
 
+type changeHandler interface {
+	handleFileChange(string)
+}
+
 type processRunner struct {
 	command []string
 	cancel  context.CancelFunc

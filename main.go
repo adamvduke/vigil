@@ -18,6 +18,7 @@ const (
 func main() {
 	// flags only used when run as a server
 	listenPath := flag.String("listen_path", "/tmp/vigil.sock", "path to the unix socket where vigil will listen for commands")
+	poll := flag.Bool("poll", false, "if vigil should poll for changes rather than use inotify")
 	pollDuration := flag.Duration("poll_interval", defaultPollInterval,
 		"time interval between polling operations, accepts a value parseable by time.ParseDuration, e.g. 5s, 300ms, etc... "+
 			"https://pkg.go.dev/time#ParseDuration")
@@ -49,5 +50,5 @@ func main() {
 	if len(flag.Args()) == 0 {
 		log.Fatal("must provide a program to run")
 	}
-	watcher.Start(*listenPath, *cwd, *pollDuration, flag.Args())
+	watcher.Start(*listenPath, *cwd, *poll, *pollDuration, flag.Args())
 }
