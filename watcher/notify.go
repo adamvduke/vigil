@@ -13,14 +13,16 @@ import (
 
 type notifyWatcher struct {
 	changeHandler
-	watched map[string]time.Time
-	fs      *fsnotify.Watcher
+	watched  map[string]time.Time
+	fs       *fsnotify.Watcher
+	excludes []string
 }
 
-func newNotifyWatcher(ch changeHandler) *notifyWatcher {
+func newNotifyWatcher(config *Config, ch changeHandler) *notifyWatcher {
 	return &notifyWatcher{
 		changeHandler: ch,
 		watched:       make(map[string]time.Time),
+		excludes:      config.Excludes,
 	}
 }
 
@@ -62,8 +64,10 @@ func (watcher *notifyWatcher) addPath(path string) ([]string, error) {
 }
 
 func (watcher *notifyWatcher) watchDir(path string) error {
-	if strings.Contains(path, ".git") {
-		return nil
+	for _, exclude := range watcher.excludes {
+		if strings.Contains(path, exclude) {
+			return nil
+		}
 	}
 	return watcher.fs.Add(path)
 }

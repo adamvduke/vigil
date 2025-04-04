@@ -11,15 +11,17 @@ import (
 
 type pollingWatcher struct {
 	changeHandler
-	paths  map[string]time.Time
-	ticker *time.Ticker
+	paths    map[string]time.Time
+	ticker   *time.Ticker
+	excludes []string
 }
 
-func newPollingWatcher(d time.Duration, ch changeHandler) *pollingWatcher {
+func newPollingWatcher(config *Config, ch changeHandler) *pollingWatcher {
 	return &pollingWatcher{
 		changeHandler: ch,
-		ticker:        time.NewTicker(d),
+		ticker:        time.NewTicker(config.PollDuration),
 		paths:         make(map[string]time.Time),
+		excludes:      config.Excludes,
 	}
 }
 
@@ -73,7 +75,12 @@ func (watcher *pollingWatcher) watchDir(root string) error {
 		if err != nil {
 			return err
 		}
-		if !d.IsDir() && !strings.Contains(path, ".git") {
+		for _, exclude := range watcher.excludes {
+			if strings.Contains(path, exclude) {
+				return nil
+			}
+		}
+		if !d.IsDir() {
 			info, err := d.Info()
 			if err != nil {
 				return err

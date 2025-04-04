@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/adamvduke/vigil/client"
@@ -15,8 +16,21 @@ const (
 	defaultPollInterval = 5 * time.Second
 )
 
+type excludes []string
+
+func (e *excludes) String() string {
+	return strings.Join(*e, ",")
+}
+
+func (e *excludes) Set(value string) error {
+	*e = append(*e, value)
+	return nil
+}
+
 func main() {
 	// flags only used when run as a server
+	excludes := excludes{".git", ".svn", ".hg"}
+	flag.Var(&excludes, "exclude", "a path component to exclude from the list of currently watched files, can be used multiple times")
 	listenPath := flag.String("listen_path", "/tmp/vigil.sock", "path to the unix socket where vigil will listen for commands")
 	poll := flag.Bool("poll", false, "if vigil should poll for changes rather than use inotify")
 	pollDuration := flag.Duration("poll_interval", defaultPollInterval,
@@ -50,5 +64,13 @@ func main() {
 	if len(flag.Args()) == 0 {
 		log.Fatal("must provide a program to run")
 	}
-	watcher.Start(*listenPath, *cwd, *poll, *pollDuration, flag.Args())
+	c := &watcher.Config{
+		ListenPath:   *listenPath,
+		Cwd:          *cwd,
+		Poll:         *poll,
+		PollDuration: *pollDuration,
+		Excludes:     excludes,
+		CmdArgs:      flag.Args(),
+	}
+	watcher.Start(c)
 }

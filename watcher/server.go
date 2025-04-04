@@ -15,6 +15,15 @@ import (
 	"google.golang.org/grpc"
 )
 
+type Config struct {
+	ListenPath   string
+	Cwd          bool
+	Poll         bool
+	PollDuration time.Duration
+	Excludes     []string
+	CmdArgs      []string
+}
+
 type watcher interface {
 	// watcher lifecycle
 	start() error
@@ -44,17 +53,17 @@ func (s *server) WatchedPaths(_ context.Context, in *pb.WatchedPathsRequest) (*p
 	return &pb.WatchedPathsReply{Paths: paths}, nil
 }
 
-func Start(listenPath string, cwd, poll bool, pollDuration time.Duration, cmdArgs []string) {
-	ch := newProcessRunner(cmdArgs)
+func Start(config *Config) {
+	ch := newProcessRunner(config.CmdArgs)
 	var watcher watcher
-	if poll {
-		watcher = newPollingWatcher(pollDuration, ch)
+	if config.Poll {
+		watcher = newPollingWatcher(config, ch)
 	} else {
-		watcher = newNotifyWatcher(ch)
+		watcher = newNotifyWatcher(config, ch)
 	}
 	watcher.start()
 	defer watcher.stop()
-	if cwd {
+	if config.Cwd {
 		dir, err := os.Getwd()
 		if err != nil {
 			log.Fatal(err)
@@ -64,7 +73,7 @@ func Start(listenPath string, cwd, poll bool, pollDuration time.Duration, cmdArg
 		}
 	}
 
-	serve(listenPath, watcher)
+	serve(config.ListenPath, watcher)
 }
 
 func serve(listenPath string, watcher watcher) {
