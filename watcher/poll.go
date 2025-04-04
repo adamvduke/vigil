@@ -38,14 +38,14 @@ func (watcher *pollingWatcher) start() error {
 			}
 		}
 	}()
+
 	return nil
 }
 
-func (watcher *pollingWatcher) stop() error {
+func (watcher *pollingWatcher) stop() {
 	if watcher.ticker == nil {
 		watcher.ticker.Stop()
 	}
-	return nil
 }
 
 func (watcher *pollingWatcher) checkModified(info os.FileInfo, path string) {
@@ -67,11 +67,12 @@ func (watcher *pollingWatcher) addPath(path string) ([]string, error) {
 	} else {
 		watcher.updateModTime(path, info)
 	}
+
 	return watcher.watchedPaths(), nil
 }
 
 func (watcher *pollingWatcher) watchDir(root string) error {
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(root, func(path string, ent fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -80,15 +81,17 @@ func (watcher *pollingWatcher) watchDir(root string) error {
 				return nil
 			}
 		}
-		if !d.IsDir() {
-			info, err := d.Info()
+		if !ent.IsDir() {
+			info, err := ent.Info()
 			if err != nil {
 				return err
 			}
 			watcher.updateModTime(path, info)
 		}
+
 		return nil
 	})
+
 	return err
 }
 

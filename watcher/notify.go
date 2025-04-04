@@ -37,11 +37,12 @@ func (watcher *notifyWatcher) start() error {
 	}
 	watcher.fs = fs
 	go watcher.monitorLoop()
+
 	return nil
 }
 
-func (watcher *notifyWatcher) stop() error {
-	return watcher.fs.Close()
+func (watcher *notifyWatcher) stop() {
+	watcher.fs.Close()
 }
 
 func (watcher *notifyWatcher) addPath(path string) ([]string, error) {
@@ -60,6 +61,7 @@ func (watcher *notifyWatcher) addPath(path string) ([]string, error) {
 			return nil, err
 		}
 	}
+
 	return watcher.watchedPaths(), nil
 }
 

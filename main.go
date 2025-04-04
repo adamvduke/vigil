@@ -64,7 +64,7 @@ func main() {
 	if len(flag.Args()) == 0 {
 		log.Fatal("must provide a program to run")
 	}
-	c := &watcher.Config{
+	cfg := &watcher.Config{
 		ListenPath:   *listenPath,
 		Cwd:          *cwd,
 		Poll:         *poll,
@@ -72,5 +72,5 @@ func main() {
 		Excludes:     excludes,
 		CmdArgs:      flag.Args(),
 	}
-	watcher.Start(c)
+	watcher.Start(cfg)
 }

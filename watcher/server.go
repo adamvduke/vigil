@@ -27,7 +27,7 @@ type Config struct {
 type watcher interface {
 	// watcher lifecycle
 	start() error
-	stop() error
+	stop()
 
 	// server interactions
 	addPath(string) ([]string, error)
@@ -61,8 +61,6 @@ func Start(config *Config) {
 	} else {
 		watcher = newNotifyWatcher(config, ch)
 	}
-	watcher.start()
-	defer watcher.stop()
 	if config.Cwd {
 		dir, err := os.Getwd()
 		if err != nil {
@@ -72,6 +70,10 @@ func Start(config *Config) {
 			log.Fatal(err)
 		}
 	}
+	if err := watcher.start(); err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.stop()
 
 	serve(config.ListenPath, watcher)
 }
