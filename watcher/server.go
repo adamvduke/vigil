@@ -65,12 +65,7 @@ func Start(config *Config) {
 		log.Fatal(err)
 	}
 	if config.Cwd {
-		dir, err := os.Getwd()
-		if err != nil {
-			watcher.stop()
-			log.Fatal(err)
-		}
-		if _, err := watcher.addPath(dir); err != nil {
+		if err := addCwd(watcher); err != nil {
 			watcher.stop()
 			log.Fatal(err)
 		}
@@ -78,6 +73,17 @@ func Start(config *Config) {
 	defer watcher.stop()
 
 	serve(config.ListenPath, watcher)
+}
+
+func addCwd(watcher watcher) error {
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	if _, err := watcher.addPath(dir); err != nil {
+		return err
+	}
+	return nil
 }
 
 func serve(listenPath string, watcher watcher) {
