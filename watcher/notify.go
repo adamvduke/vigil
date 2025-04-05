@@ -84,18 +84,25 @@ func (watcher *notifyWatcher) monitorLoop() {
 	for {
 		select {
 		case err, ok := <-watcher.fs.Errors:
-			if !ok { // Channel was closed (i.e. Watcher.Close() was called).
-				return
+			if !ok {
+				return // Channel was closed (i.e. Watcher.Close() was called).
 			}
-			log.Printf("error: %v", err)
-			continue
+			watcher.handleError(err)
 		case e, ok := <-watcher.fs.Events:
-			if !ok { // Channel was closed (i.e. Watcher.Close() was called).
-				return
+			if !ok {
+				return // Channel was closed (i.e. Watcher.Close() was called).
 			}
-			if !e.Has(fsnotify.Chmod) {
-				go watcher.handleFileChange(e.Name)
-			}
+			watcher.handleEvent(e)
 		}
+	}
+}
+
+func (watcher *notifyWatcher) handleError(err error) {
+	log.Printf("error: %v", err)
+}
+
+func (watcher *notifyWatcher) handleEvent(e fsnotify.Event) {
+	if !e.Has(fsnotify.Chmod) {
+		go watcher.handleFileChange(e.Name)
 	}
 }
