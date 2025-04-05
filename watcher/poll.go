@@ -31,7 +31,7 @@ func (watcher *pollingWatcher) start() error {
 	log.Println("Starting polling watcher")
 	go func() {
 		for range watcher.ticker.C {
-			for _, path := range watcher.watchedPaths() {
+			for path := range watcher.paths {
 				info, err := os.Stat(path)
 				if err != nil {
 					log.Println(err)
@@ -74,7 +74,7 @@ func (watcher *pollingWatcher) addPath(path string) ([]string, error) {
 }
 
 func (watcher *pollingWatcher) watchDir(root string) error {
-	err := filepath.WalkDir(root, func(path string, ent fs.DirEntry, err error) error {
+	return filepath.WalkDir(root, func(path string, ent fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -93,8 +93,6 @@ func (watcher *pollingWatcher) watchDir(root string) error {
 
 		return nil
 	})
-
-	return err
 }
 
 func (watcher *pollingWatcher) updateModTime(path string, info fs.FileInfo) {
