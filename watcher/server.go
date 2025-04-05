@@ -61,17 +61,19 @@ func Start(config *Config) {
 	} else {
 		watcher = newNotifyWatcher(config, ch)
 	}
+	if err := watcher.start(); err != nil {
+		log.Fatal(err)
+	}
 	if config.Cwd {
 		dir, err := os.Getwd()
 		if err != nil {
+			watcher.stop()
 			log.Fatal(err)
 		}
 		if _, err := watcher.addPath(dir); err != nil {
+			watcher.stop()
 			log.Fatal(err)
 		}
-	}
-	if err := watcher.start(); err != nil {
-		log.Fatal(err)
 	}
 	defer watcher.stop()
 
