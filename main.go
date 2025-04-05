@@ -46,32 +46,14 @@ func main() {
 	flag.Parse()
 
 	if *runAsClient {
-		wClient := &client.WatcherClient{Addr: "unix:" + *listenPath}
-		var (
-			paths []string
-			err   error
-			abs   string
-		)
-		if *path != "" {
-			abs, err = filepath.Abs(*path)
-			if err != nil {
-				log.Fatal(err)
-			}
-			paths, err = wClient.AddWatch(abs)
-		} else {
-			paths, err = wClient.WatchedPaths()
-		}
-		if err != nil {
-			log.Fatal(err)
-		}
-		log.Println("Listening for changes to", paths)
-
+		runClient(*listenPath, *path)
 		return
 	}
 
 	if len(flag.Args()) == 0 {
 		log.Fatal("must provide a program to run")
 	}
+
 	cfg := &watcher.Config{
 		ListenPath:   *listenPath,
 		Cwd:          *cwd,
@@ -81,4 +63,26 @@ func main() {
 		CmdArgs:      flag.Args(),
 	}
 	watcher.Start(cfg)
+}
+
+func runClient(listenPath, path string) {
+	wClient := &client.WatcherClient{Addr: "unix:" + listenPath}
+	var (
+		paths []string
+		err   error
+		abs   string
+	)
+	if path != "" {
+		abs, err = filepath.Abs(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		paths, err = wClient.AddWatch(abs)
+	} else {
+		paths, err = wClient.WatchedPaths()
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Println("Listening for changes to", paths)
 }
