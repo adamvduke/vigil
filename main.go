@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"log"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -46,10 +47,17 @@ func main() {
 
 	if *runAsClient {
 		wClient := &client.WatcherClient{Addr: "unix:" + *listenPath}
-		var paths []string
-		var err error
+		var (
+			paths []string
+			err   error
+			abs   string
+		)
 		if *path != "" {
-			paths, err = wClient.AddWatch(*path)
+			abs, err = filepath.Abs(*path)
+			if err != nil {
+				log.Fatal(err)
+			}
+			paths, err = wClient.AddWatch(abs)
 		} else {
 			paths, err = wClient.WatchedPaths()
 		}
