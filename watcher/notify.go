@@ -60,6 +60,8 @@ func (watcher *notifyWatcher) addPath(path string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		watcher.fs.Add(path)
 	}
 
 	return watcher.watchedPaths(), nil
