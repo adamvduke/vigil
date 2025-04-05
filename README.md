@@ -8,21 +8,32 @@ found [vigilo](https://github.com/wycats/vigilo) from [wycats](https://github.co
 that does virtually the same thing. I changed the name to `vigil` based on the
 name of one of my favorite [Lamb of God songs](https://www.youtube.com/watch?v=lxgelwqe8-E).
 
-## Why?
-My google foo was lacking when I was looking for a thing to run tests for a
-golang project, watch for file changes, stop an existig test run, and re-run
-the tests continuously. There's a section lower with links to a bunch of
-existing, likely more hardened, projects below.
+## Install
 
-## Why poll?
-It's less efficient than using a file system notification API, but doesn't run
-into problems with the maximum number of open files per process.
+- Make sure you have [Go](https://golang.org/doc/install) installed.
+- `go install github.com/adamvduke/vigil@v0.0.1`
 
-## Why proto and grpc?
-I was interviewing and it was mentioned the company's backend was golang/proto/grpc
-based. I did plenty of proto/grpc at Google, but not using Go, and I've found
-the best way to learn about a less familiar tech is to write a slightly more
-than trivial project using that tech.
+## Usage
+```
+$ vigil --help
+Usage of vigil:
+  -client
+    	if vigil should operate as a client rather than server/watcher
+  -cwd
+    	if vigil should watch the current working directory (default true)
+  -exclude value
+    	a path component to exclude from the list of currently watched files, can be used multiple times (default .git,.svn,.hg)
+  -listen_path string
+    	path to the unix socket where vigil will listen for commands (default "/tmp/vigil.sock")
+  -path string
+    	a path to add to the list of currently watched files, only used when operating as a client
+  -poll
+    	if vigil should poll for changes rather than use inotify
+  -poll_interval duration
+    	time interval between polling operations, accepts a value parseable by time.ParseDuration, e.g. 5s, 300ms, etc... https://pkg.go.dev/time#ParseDuration (default 5s)
+  -version
+    	print the version of vigil and exit
+```
 
 ## Generate the proto stuff
 
@@ -34,9 +45,13 @@ than trivial project using that tech.
 
 ## How it works
 By default the main entry point to the program starts a server and a watcher
-that maintains a map of file paths from the currenty working directory ->
-modified time and if the modified time changes, cancels any running instance
-of the given command and starts a new instance.
+that uses file system notifications to recursively watch the current working
+directory. Paths containing ".git", ".svn", and ".hg" are excluded. Additional
+paths can be excluded via the `-exclude` flag, which can be passed multiple
+times.
+
+There are CLI flags to disable watching the current working directory, and
+also switch to polling instead of file system notifications.
 
 The main entrypoint also provides a flag to run the program as a client, which
 can either make a request to add a path to the list of watched files, or
