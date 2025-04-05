@@ -29,15 +29,17 @@ func (e *excludes) Set(value string) error {
 }
 
 func main() {
-	// flags only used when run as a server
+	// default excludes
 	excludes := excludes{".git", ".svn", ".hg"}
+
+	// flags only used when run as a server
+	cwd := flag.Bool("cwd", true, "if vigil should watch the current working directory")
 	flag.Var(&excludes, "exclude", "a path component to exclude from the list of currently watched files, can be used multiple times")
 	listenPath := flag.String("listen_path", "/tmp/vigil.sock", "path to the unix socket where vigil will listen for commands")
 	poll := flag.Bool("poll", false, "if vigil should poll for changes rather than use inotify")
 	pollDuration := flag.Duration("poll_interval", defaultPollInterval,
 		"time interval between polling operations, accepts a value parseable by time.ParseDuration, e.g. 5s, 300ms, etc... "+
 			"https://pkg.go.dev/time#ParseDuration")
-	cwd := flag.Bool("cwd", true, "if vigil should watch the current working directory")
 
 	// flags only used when run as a client
 	runAsClient := flag.Bool("client", false, "if vigil should operate as a client rather than server/watcher")
