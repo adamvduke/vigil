@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,8 @@ import (
 //go:generate protoc --go_out=proto/ --go-grpc_out=proto/ --proto_path=proto/ proto/vigil.proto
 
 const (
+	version = "0.0.1"
+
 	defaultPollInterval = 5 * time.Second
 )
 
@@ -40,12 +43,18 @@ func main() {
 	pollDuration := flag.Duration("poll_interval", defaultPollInterval,
 		"time interval between polling operations, accepts a value parseable by time.ParseDuration, e.g. 5s, 300ms, etc... "+
 			"https://pkg.go.dev/time#ParseDuration")
+	versionFlag := flag.Bool("version", false, "print the version of vigil and exit")
 
 	// flags only used when run as a client
 	runAsClient := flag.Bool("client", false, "if vigil should operate as a client rather than server/watcher")
 	path := flag.String("path", "", "a path to add to the list of currently watched files, only used when operating as a client")
 
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Printf("vigil version %s\n", version)
+		return
+	}
 
 	if *runAsClient {
 		runClient(*listenPath, *path)
