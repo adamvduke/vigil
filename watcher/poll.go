@@ -3,8 +3,10 @@ package watcher
 import (
 	"io/fs"
 	"log"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 )
@@ -100,9 +102,5 @@ func (watcher *pollingWatcher) updateModTime(path string, info fs.FileInfo) {
 }
 
 func (watcher *pollingWatcher) watchedPaths() []string {
-	paths := []string{}
-	for p := range watcher.paths {
-		paths = append(paths, p)
-	}
-	return paths
+	return slices.Collect(maps.Keys(watcher.paths))
 }
