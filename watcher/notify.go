@@ -16,6 +16,9 @@ type notifyWatcher struct {
 	watched  map[string]time.Time
 	fs       *fsnotify.Watcher
 	excludes []string
+
+	tickFreq time.Duration
+	tick     *time.Ticker
 }
 
 func newNotifyWatcher(config *Config, ch changeHandler) *notifyWatcher {
@@ -23,6 +26,8 @@ func newNotifyWatcher(config *Config, ch changeHandler) *notifyWatcher {
 		changeHandler: ch,
 		watched:       make(map[string]time.Time),
 		excludes:      config.Excludes,
+		tickFreq:      config.PollDuration,
+		tick:          time.NewTicker(config.PollDuration),
 	}
 }
 
@@ -92,7 +97,7 @@ func (watcher *notifyWatcher) monitorLoop() {
 			if !ok {
 				return // Channel was closed (i.e. Watcher.Close() was called).
 			}
-			watcher.handleEvent(e)
+			watcher.handleEvent(&e)
 		}
 	}
 }
@@ -101,8 +106,17 @@ func (watcher *notifyWatcher) handleError(err error) {
 	log.Printf("error: %v", err)
 }
 
-func (watcher *notifyWatcher) handleEvent(e fsnotify.Event) {
-	if !e.Has(fsnotify.Chmod) {
+func (watcher *notifyWatcher) handleEvent(e *fsnotify.Event) {
+	select {
+	case <-watcher.tick.C:
+		// reading from watcher.tick.C will tick at most once every watcher.tickFreq
 		go watcher.handleFileChange(e.Name)
+
+		// reset the ticker in case there is another event already queued
+		// this ensures that we don't process events too frequently
+		watcher.tick.Reset(watcher.tickFreq)
+	default:
+		// Skip processing if the event is too soon after the last one.
+		return
 	}
 }
