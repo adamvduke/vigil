@@ -19,6 +19,7 @@ type notifyWatcher struct {
 
 	tickFreq time.Duration
 	tick     *time.Ticker
+	runChan  chan *fsnotify.Event
 }
 
 func newNotifyWatcher(config *Config, ch changeHandler) *notifyWatcher {
@@ -28,6 +29,7 @@ func newNotifyWatcher(config *Config, ch changeHandler) *notifyWatcher {
 		excludes:      config.Excludes,
 		tickFreq:      config.PollDuration,
 		tick:          time.NewTicker(config.PollDuration),
+		runChan:       make(chan *fsnotify.Event, 1),
 	}
 }
 
@@ -41,7 +43,8 @@ func (watcher *notifyWatcher) start() error {
 		return err
 	}
 	watcher.fs = fs
-	go watcher.monitorLoop()
+	go watcher.watchLoop()
+	go watcher.runLoop()
 
 	return nil
 }
@@ -85,19 +88,21 @@ func (watcher *notifyWatcher) watchedPaths() []string {
 	return watcher.fs.WatchList()
 }
 
-func (watcher *notifyWatcher) monitorLoop() {
+func (watcher *notifyWatcher) watchLoop() {
 	for {
 		select {
 		case err, ok := <-watcher.fs.Errors:
 			if !ok {
 				return // Channel was closed (i.e. Watcher.Close() was called).
 			}
-			watcher.handleError(err)
+			go watcher.handleError(err)
 		case e, ok := <-watcher.fs.Events:
 			if !ok {
 				return // Channel was closed (i.e. Watcher.Close() was called).
 			}
-			watcher.handleEvent(&e)
+			go func() {
+				watcher.runChan <- &e
+			}()
 		}
 	}
 }
@@ -106,17 +111,26 @@ func (watcher *notifyWatcher) handleError(err error) {
 	log.Printf("error: %v", err)
 }
 
-func (watcher *notifyWatcher) handleEvent(e *fsnotify.Event) {
-	select {
-	case <-watcher.tick.C:
-		// reading from watcher.tick.C will tick at most once every watcher.tickFreq
-		go watcher.handleFileChange(e.Name)
+func (watcher *notifyWatcher) runLoop() {
+	for range watcher.tick.C {
+		func() {
+			select {
+			// Check if there is an event to process
+			case e := <-watcher.runChan:
+				go watcher.handleFileChange(e.Name)
 
-		// reset the ticker in case there is another event already queued
-		// this ensures that we don't process events too frequently
-		watcher.tick.Reset(watcher.tickFreq)
-	default:
-		// Skip processing if the event is too soon after the last one.
-		return
+				// Drain any other events in the channel
+				for {
+					select {
+					case <-watcher.runChan:
+						// no-op, just draining the channel
+					default:
+						return // channel is empty, exit the loop
+					}
+				}
+			default:
+				// No events to process, just return
+			}
+		}()
 	}
 }

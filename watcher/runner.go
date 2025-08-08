@@ -31,6 +31,7 @@ func (runner *processRunner) handleFileChange(path string) {
 		runner.cancel()
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	runner.cancel = cancel
 	log.Printf("running: %v", strings.Join(runner.command, " "))
 	cmd := exec.CommandContext(ctx, runner.command[0], runner.command[1:]...)
@@ -38,8 +39,11 @@ func (runner *processRunner) handleFileChange(path string) {
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
 		log.Printf("%v failed to start with error: %v", runner.command, err)
+		return
 	}
 	if err := cmd.Wait(); err != nil {
 		log.Printf("%v finished with error: %v", runner.command, err)
+		return
 	}
+	log.Printf("%v finished successfully", runner.command)
 }
