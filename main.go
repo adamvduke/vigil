@@ -15,7 +15,7 @@ import (
 //go:generate protoc --go_out=proto/ --go-grpc_out=proto/ --proto_path=proto/ proto/vigil.proto
 
 const (
-	version = "0.0.2"
+	version = "0.0.4"
 
 	defaultPollInterval = 5 * time.Second
 )
