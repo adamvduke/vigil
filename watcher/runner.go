@@ -33,7 +33,7 @@ func (runner *processRunner) handleFileChange(path string) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	runner.cancel = cancel
-	log.Printf("running: %v", strings.Join(runner.command, " "))
+	log.Printf("%s was modified. running: %v", path, strings.Join(runner.command, " "))
 	cmd := exec.CommandContext(ctx, runner.command[0], runner.command[1:]...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

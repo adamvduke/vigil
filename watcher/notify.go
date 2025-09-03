@@ -112,25 +112,36 @@ func (watcher *notifyWatcher) handleError(err error) {
 }
 
 func (watcher *notifyWatcher) runLoop() {
-	for range watcher.tick.C {
-		func() {
-			select {
-			// Check if there is an event to process
-			case e := <-watcher.runChan:
-				go watcher.handleFileChange(e.Name)
+	for {
+		events := []*fsnotify.Event{}
 
-				// Drain any other events in the channel
-				for {
-					select {
-					case <-watcher.runChan:
-						// no-op, just draining the channel
-					default:
-						return // channel is empty, exit the loop
-					}
+		// Drain the channel and collect all events
+		drain := true
+		for drain {
+			select {
+			case e := <-watcher.runChan:
+				if e.Has(fsnotify.Write) {
+					// Ignore chmod events
+					events = append(events, e)
 				}
+				// Collect the event
 			default:
-				// No events to process, just return
+				drain = false
 			}
-		}()
+		}
+
+		if len(events) > 0 {
+			// Print all events
+			for _, e := range events {
+				log.Printf("Event: %s %s", e.Name, e.Op)
+			}
+
+			// Pick a random event
+			randIdx := time.Now().UnixNano() % int64(len(events))
+			go watcher.handleFileChange(events[randIdx].Name)
+		}
+
+		// Wait for next tick
+		<-watcher.tick.C
 	}
 }
